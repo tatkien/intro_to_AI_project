@@ -94,33 +94,28 @@ class TaxiWrapper(gym.Wrapper):
         if isinstance(state, int):
             state = self.get_symbolic_state(state)
         
-        taxi_row, taxi_col, passenger_loc, destination = state
+        _, _, passenger_loc, destination = state
         
         # Goal achieved when:
         # 1. Passenger is not in taxi (passenger_loc != 4)
         # 2. Passenger location matches destination
-        # After successful dropoff, passenger_loc becomes the destination index
+        # In Taxi-v3, after dropoff, the episode terminates
         
-        # In Taxi-v3, after successful dropoff, the episode terminates
-        # So goal is when passenger was picked up (loc=4) and taxi is at destination
-        dest_row, dest_col = self.locations[destination]
-        
-        return (passenger_loc == destination and taxi_row == dest_row and taxi_col == dest_col)
-    def _calculate_cost(self, current_state, action, next_state):
+        return passenger_loc == destination 
+    def _calculate_cost(self, current_state, action):
         """
         Calculate cost of taking an action from current_state to next_state.
         
         Args:
-            current_state: int (encoded state) or tuple
+            current_state: tuple
             action: action taken
-            next_state: int (encoded state) or tuple
         Returns:
             cost: int
         """
         if action in [0, 1, 2, 3]:  # Movement actions
-            return 1 #if self._non_legit_move(*self.get_symbolic_state(current_state)[:2], action) == False else 10
+            return 1 #if self._non_legit_move(*current_state[:2], action) == False else 10
         elif action == 4:  # Pickup
-            taxi_row, taxi_col, passenger_loc, destination = self.get_symbolic_state(current_state)
+            taxi_row, taxi_col, passenger_loc, destination = current_state
             if passenger_loc < 4:
                 pass_row, pass_col = self.locations[passenger_loc]
                 if taxi_row == pass_row and taxi_col == pass_col:
@@ -130,7 +125,7 @@ class TaxiWrapper(gym.Wrapper):
             else:
                 return 10  # Illegal pickup (passenger already in taxi)
         
-        taxi_row, taxi_col, passenger_loc, destination = self.get_symbolic_state(current_state)
+        taxi_row, taxi_col, passenger_loc, destination = current_state
         dest_row, dest_col = self.locations[destination]
         if passenger_loc == 4:
             if taxi_row == dest_row and taxi_col == dest_col:
@@ -150,19 +145,15 @@ class TaxiWrapper(gym.Wrapper):
         Returns:
             List of (action, next_state, cost) tuples
         """
-        if isinstance(state, tuple):
-            # Convert tuple back to encoded state for simulation
-            taxi_row, taxi_col, passenger_loc, destination = state
-            encoded_state = taxi_row * 100 + taxi_col * 20 + passenger_loc * 4 + destination
-        else:
-            encoded_state = state
+        if isinstance(state, int):
+            state = self.get_symbolic_state(state)
         
         successors = []
         
         # Try each action
         for action in self.available_actions:
-            next_state = self._simulate_action(encoded_state, action)
-            cost = self._calculate_cost(encoded_state, action, next_state)
+            next_state = self._simulate_action(state, action)
+            cost = self._calculate_cost(state, action)
             successors.append((action, next_state, cost))
         
         return successors
@@ -172,7 +163,8 @@ class TaxiWrapper(gym.Wrapper):
         Check if an action is illegal in the Taxi environment.
         
         Args:
-            state: int (encoded state) or tuple
+            taxi_row: current taxi row
+            taxi_col: current taxi column
             action: action to check
         Returns:
             True if action is illegal, False otherwise
@@ -194,7 +186,7 @@ class TaxiWrapper(gym.Wrapper):
         
         For now, returns the encoded state after basic movement.
         """
-        taxi_row, taxi_col, passenger_loc, destination = self.get_symbolic_state(state)
+        taxi_row, taxi_col, passenger_loc, destination = state
         
         if self._non_legit_move(taxi_row, taxi_col, action):
             # Illegal move, stay in place
