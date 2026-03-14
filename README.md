@@ -1,39 +1,172 @@
-## Overview
-This project implements and compares various search algorithms on the Taxi-v3 environment from OpenAI Gymnasium.
+# AI Taxi Project
 
-## Taxi-v3 Game
-The Taxi environment is a classic reinforcement learning problem where:
-- **Objective**: Pick up a passenger at one location and drop them off at their destination
-- **Grid**: 5x5 grid with 4 designated locations (Red, Green, Yellow, Blue)
-- **Actions**: 
-  - Move: South (0), North (1), East (2), West (3)
-  - Pickup passenger (4)
-  - Dropoff passenger (5)
-- **State Space**: 500 possible states encoding taxi position, passenger location, and destination
-- **Goal**: Successfully deliver the passenger to their destination
+Interactive visualization of AI search algorithms on a custom Taxi environment built with Pygame.
 
-## Implemented Algorithms
+## What This Project Does
 
-### 1. Breadth-First Search (BFS)
-- **Type**: Uninformed search
-- **Strategy**: Explores states level by level using a FIFO queue
-- **Completeness**: Complete (guaranteed to find a solution if one exists)
-- **Optimality**: Optimal for unit cost paths
-- **Use Case**: Finding shortest path in terms of number of steps
+- Simulates a grid-based taxi task with walls, mud tiles, and multiple passengers.
+- Lets you run BFS, DFS, and A* from the same initial state.
+- Animates each solution path step-by-step.
+- Shows live metrics: expanded nodes, path length, path cost, execution time, and progress.
 
-### 2. Depth-First Search (DFS)
-- **Type**: Uninformed search
-- **Strategy**: Explores as deep as possible using a LIFO stack
-- **Completeness**: Complete with depth limit
-- **Optimality**: Not optimal
-- **Use Case**: Quick exploration when path length is not critical
+## Features
 
-### 3. A* Search
-- **Type**: Informed search with heuristic
-- **Strategy**: Uses f(n) = g(n) + h(n) to prioritize states
-  - g(n): Cost from start to current state
-  - h(n): Estimated cost to goal (Manhattan distance heuristic)
-- **Completeness**: Complete
-- **Optimality**: Optimal with admissible heuristic
-- **Heuristic**: Manhattan distance considering passenger pickup and destination
-- **Use Case**: Finding optimal path efficiently
+- Pygame UI with scene-based navigation (menu and taxi simulation)
+- Three levels with increasing map size and task count
+- Manual play controls (arrow keys + space)
+- Search playback controls (run, pause/resume, reset)
+- Terrain-aware cost model (mud is more expensive than road)
+
+## Requirements
+
+- Python 3.10+
+- See dependencies in `requirements.txt`
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Run
+
+Start the application:
+
+```bash
+python main.py
+```
+
+## Controls
+
+### Menu Scene
+
+- Mouse click: choose level or exit
+- Mouse wheel: scroll info panel
+- ESC: quit application
+
+### Taxi Scene
+
+- Mouse click: choose algorithm and control buttons
+- Arrow keys: manual movement (when search playback is not running)
+  - Down = South
+  - Up = North
+  - Right = East
+  - Left = West
+- Space: smart pickup/dropoff action in manual mode
+- Mouse wheel: scroll right-side stats panel
+- ESC: quit application
+
+## Search Algorithms
+
+Implemented in `src/search/algorithms.py`:
+
+- BFS (Breadth-First Search)
+  - Uses FIFO frontier
+  - Complete for finite state space
+  - Good baseline for shallow solutions
+- DFS (Depth-First Search)
+  - Uses LIFO frontier
+  - Can be fast for lucky search order, not path-optimal
+- A* (A-Star Search)
+  - Uses `f(n) = g(n) + h(n)`
+  - Heuristic comes from environment (`TaxiEnv.heuristic`)
+  - Tracks best known path cost per state
+
+## Environment Model
+
+Main environment class: `TaxiEnv` in `src/scenes/taxi.py`.
+
+### State Representation
+
+```text
+[taxi_row, taxi_col, passenger_states..., current_passenger]
+```
+
+- `passenger_state`: `0 = waiting`, `1 = in taxi`, `2 = delivered`
+- `current_passenger`: `-1` if taxi is empty, otherwise passenger index
+
+### Actions
+
+- `0`: South
+- `1`: North
+- `2`: East
+- `3`: West
+- `4`: Pickup
+- `5`: Dropoff
+
+### Terrain Costs
+
+Configured in `config.py`:
+
+- Road (`EMPTY`): walkable, cost `1`
+- Mud (`MUD`): walkable, cost `3`
+- Wall (`WALL`): not walkable
+
+Search uses `cost = -reward`, so lower movement reward corresponds to higher path cost.
+
+### Levels
+
+Configured inside `TaxiEnv._configure_level`:
+
+- Level 1: `10x10`, 4 locations, 1 passenger task
+- Level 2: `15x15`, 6 locations, 2 passenger tasks
+- Level 3: `20x20`, 10 locations, 3 passenger tasks
+
+## Project Structure
+
+```text
+intro_to_AI_project/
+|-- main.py
+|-- settings.py
+|-- config.py
+|-- requirements.txt
+|-- README.md
+|-- src/
+|   |-- scene_manager.py
+|   |-- scenes/
+|   |   |-- scene.py
+|   |   |-- menu.py
+|   |   |-- taxi.py
+|   |   `-- element.py
+|   `-- search/
+|       |-- algorithms.py
+|       `-- __init__.py
+|-- images/
+|   |-- logo.jpg
+|   |-- road.jpg
+|   |-- mud.jpg
+|   |-- wall.png
+|   |-- taxi.png
+|   |-- passenger.png
+|   `-- dest.png
+|-- environment/
+|   `-- __init__.py
+|-- test.py
+`-- boxing_test.py
+```
+
+## Notes About Extra Scripts
+
+- `test.py`: standalone Gymnasium-based taxi environment prototype/manual test.
+- `boxing_test.py`: unrelated Atari Boxing RAM experiment.
+
+The main playable app is launched from `main.py`.
+
+## Troubleshooting
+
+- If images fail to load, verify files exist under `images/` and keep filenames unchanged.
+- If installation fails, update pip first:
+
+```bash
+python -m pip install --upgrade pip
+```
+
+- On Windows, DPI scaling is handled in `main.py` via `SetProcessDPIAware()`.
+
+## Learning Extensions
+
+Good next improvements for this project:
+
+1. Add UCS or Greedy Best-First for comparison.
+2. Add seeded resets for reproducible algorithm benchmarks.
+3. Export run metrics to CSV for offline analysis.

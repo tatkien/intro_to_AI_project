@@ -5,12 +5,12 @@ Implements: BFS, DFS, A*, and Hill Climbing
 
 import collections
 import heapq
-
+import copy
 
 class SearchNode:
     """Node for search tree"""
     def __init__(self, state, parent=None, action=None, cost=0, heuristic=0):
-        self.state = state
+        self.state = copy.deepcopy(state)
         self.parent = parent
         self.action = action
         self.cost = cost  # g(n): cost from start to this node
@@ -19,6 +19,8 @@ class SearchNode:
     
     def __lt__(self, other):
         """For priority queue comparison in A*"""
+        if self.f_score == other.f_score:
+            return self.heuristic < other.heuristic  # Tie-breaker: lower heuristic
         return self.f_score < other.f_score
     
     def get_path(self):
@@ -37,14 +39,14 @@ class BreadthFirstSearch:
     def __init__(self, env):
         self.env = env
         self.nodes_expanded = 0
+        self.path_cost = 0
     
-    def search(self, start_state, max_depth=100):
+    def search(self, start_state):
         """
         BFS to find goal state
         
         Args:
             start_state: initial state tuple
-            max_depth: maximum search depth
         
         Returns:
             list: action sequence to goal, or None if not found
@@ -62,12 +64,9 @@ class BreadthFirstSearch:
             
             # Check if goal
             if self.env.is_goal_state(node.state):
-                print(f"BFS: Goal found! Nodes expanded: {self.nodes_expanded}")
+                self.path_cost = node.cost
+                print(f"BFS: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
                 return node.get_path()
-            
-            # Check depth limit
-            if len(node.get_path()) >= max_depth:
-                continue
             
             # Expand node
             for action, next_state, cost in self.env.get_successors(node.state):
@@ -86,14 +85,14 @@ class DepthFirstSearch:
     def __init__(self, env):
         self.env = env
         self.nodes_expanded = 0
+        self.path_cost = 0
     
-    def search(self, start_state, max_depth=50):
+    def search(self, start_state):
         """
         DFS to find goal state
         
         Args:
             start_state: initial state tuple
-            max_depth: maximum search depth
         
         Returns:
             list: action sequence to goal, or None if not found
@@ -111,12 +110,9 @@ class DepthFirstSearch:
             
             # Check if goal
             if self.env.is_goal_state(node.state):
-                print(f"DFS: Goal found! Nodes expanded: {self.nodes_expanded}")
+                self.path_cost = node.cost
+                print(f"DFS: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
                 return node.get_path()
-            
-            # Check depth limit
-            if len(node.get_path()) >= max_depth:
-                continue
             
             # Expand node (reverse order for more natural exploration)
             successors = self.env.get_successors(node.state)
@@ -136,19 +132,19 @@ class AStarSearch:
     def __init__(self, env):
         self.env = env
         self.nodes_expanded = 0
+        self.path_cost = 0
         self.heuristic_func = env.heuristic
     
     def get_heuristic(self, state):
         """Get heuristic value based on selected function"""
         return self.heuristic_func(state)
     
-    def search(self, start_state, max_depth=100):
+    def search(self, start_state):
         """
         A* search to find optimal path to goal
         
         Args:
             start_state: initial state tuple
-            max_depth: maximum search depth
         
         Returns:
             list: optimal action sequence to goal, or None if not found
@@ -170,12 +166,9 @@ class AStarSearch:
             
             # Check if goal
             if self.env.is_goal_state(node.state):
-                print(f"A*: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {node.cost}")
+                self.path_cost = node.cost
+                print(f"A*: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
                 return node.get_path()
-            
-            # Check depth limit
-            if len(node.get_path()) >= max_depth:
-                continue
             
             # Expand node
             for action, next_state, step_cost in self.env.get_successors(node.state):

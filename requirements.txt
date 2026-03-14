@@ -1,2 +1,4 @@
 gymnasium
 gymnasium[toy-text]
+pygame
+numpy
