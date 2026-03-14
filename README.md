@@ -139,10 +139,6 @@ intro_to_AI_project/
 |   |-- taxi.png
 |   |-- passenger.png
 |   `-- dest.png
-|-- environment/
-|   `-- __init__.py
-|-- test.py
-`-- boxing_test.py
 ```
 
 ## Notes About Extra Scripts
