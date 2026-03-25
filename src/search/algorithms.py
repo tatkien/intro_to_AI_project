@@ -7,6 +7,11 @@ import collections
 import heapq
 import copy
 
+
+def print_max_frontier_nodes(algorithm_name, frontier_type, max_frontier_size):
+    """Print peak frontier size to compare memory usage across algorithms."""
+    print(f"{algorithm_name}: Max {frontier_type} size: {max_frontier_size}")
+
 class SearchNode:
     """Node for search tree"""
     def __init__(self, state, parent=None, action=None, cost=0, heuristic=0):
@@ -40,6 +45,7 @@ class BreadthFirstSearch:
         self.env = env
         self.nodes_expanded = 0
         self.path_cost = 0
+        self.max_frontier_size = 0
     
     def search(self, start_state):
         """
@@ -55,6 +61,7 @@ class BreadthFirstSearch:
         
         # Initialize frontier as FIFO queue
         frontier = collections.deque([SearchNode(start_state)])
+        self.max_frontier_size = len(frontier)
         visited = {start_state}
         
         while frontier:
@@ -66,6 +73,7 @@ class BreadthFirstSearch:
             if self.env.is_goal_state(node.state):
                 self.path_cost = node.cost
                 print(f"BFS: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
+                print_max_frontier_nodes("BFS", "queue", self.max_frontier_size)
                 return node.get_path()
             
             # Expand node
@@ -73,9 +81,11 @@ class BreadthFirstSearch:
                 if next_state not in visited:
                     child = SearchNode(next_state, parent=node, action=action, cost=node.cost + cost)
                     frontier.append(child)
+                    self.max_frontier_size = max(self.max_frontier_size, len(frontier))
                     visited.add(next_state)
         
         print(f"BFS: Goal not found. Nodes expanded: {self.nodes_expanded}")
+        print_max_frontier_nodes("BFS", "queue", self.max_frontier_size)
         return None
 
 
@@ -86,6 +96,7 @@ class DepthFirstSearch:
         self.env = env
         self.nodes_expanded = 0
         self.path_cost = 0
+        self.max_frontier_size = 0
     
     def search(self, start_state):
         """
@@ -101,6 +112,7 @@ class DepthFirstSearch:
         
         # Initialize frontier as LIFO stack
         frontier = [SearchNode(start_state)]
+        self.max_frontier_size = len(frontier)
         visited = {start_state}
         
         while frontier:
@@ -112,6 +124,7 @@ class DepthFirstSearch:
             if self.env.is_goal_state(node.state):
                 self.path_cost = node.cost
                 print(f"DFS: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
+                print_max_frontier_nodes("DFS", "stack", self.max_frontier_size)
                 return node.get_path()
             
             # Expand node (reverse order for more natural exploration)
@@ -120,9 +133,11 @@ class DepthFirstSearch:
                 if next_state not in visited:
                     child = SearchNode(next_state, parent=node, action=action, cost=node.cost + cost)
                     frontier.append(child)
+                    self.max_frontier_size = max(self.max_frontier_size, len(frontier))
                     visited.add(next_state)
         
         print(f"DFS: Goal not found. Nodes expanded: {self.nodes_expanded}")
+        print_max_frontier_nodes("DFS", "stack", self.max_frontier_size)
         return None
 
 
@@ -134,6 +149,7 @@ class AStarSearch:
         self.nodes_expanded = 0
         self.path_cost = 0
         self.heuristic_func = env.heuristic
+        self.max_frontier_size = 0
     
     def get_heuristic(self, state):
         """Get heuristic value based on selected function"""
@@ -155,34 +171,36 @@ class AStarSearch:
         start_h = self.get_heuristic(start_state)
         start_node = SearchNode(start_state, cost=0, heuristic=start_h)
         frontier = [start_node]
+        self.max_frontier_size = len(frontier)
         
-        # Track best cost to reach each state
         visited = {start_state: 0}
         
         while frontier:
-            # Pop node with lowest f-score
             node = heapq.heappop(frontier)
+            if node.cost > visited.get(node.state, float('inf')):
+                continue
+
             self.nodes_expanded += 1
             
-            # Check if goal
             if self.env.is_goal_state(node.state):
                 self.path_cost = node.cost
                 print(f"A*: Goal found! Nodes expanded: {self.nodes_expanded}, Path cost: {self.path_cost}")
+                print_max_frontier_nodes("A*", "frontier", self.max_frontier_size)
                 return node.get_path()
             
-            # Expand node
             for action, next_state, step_cost in self.env.get_successors(node.state):
                 new_cost = node.cost + step_cost
                 
-                # Only explore if we found a better path to this state
                 if next_state not in visited or new_cost < visited[next_state]:
                     visited[next_state] = new_cost
                     h = self.get_heuristic(next_state)
                     child = SearchNode(next_state, parent=node, action=action, 
                                      cost=new_cost, heuristic=h)
                     heapq.heappush(frontier, child)
+                    self.max_frontier_size = max(self.max_frontier_size, len(frontier))
         
         print(f"A*: Goal not found. Nodes expanded: {self.nodes_expanded}")
+        print_max_frontier_nodes("A*", "frontier", self.max_frontier_size)
         return None
 
 

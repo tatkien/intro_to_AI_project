@@ -300,7 +300,6 @@ class TaxiEnv:
 
         total_dist = 0
 
-        # Passenger currently in taxi: must travel to destination + 1 dropoff action
         if current_passenger != -1:
             dest_loc = self.locs[self.destination_locations[current_passenger]]
             total_dist += abs(taxi_row - dest_loc[0]) + abs(taxi_col - dest_loc[1]) + 1
@@ -364,8 +363,6 @@ class TaxiEnv:
 
     def step(self, action):
         next_state, reward, terminated, truncated, info = self._simulate_step(action)
-
-        # Commit simulated result
         self.state = next_state
         self.passenger_states = list(next_state[2:2 + self.num_passengers])
         self.current_passenger = next_state[-1]
@@ -419,6 +416,7 @@ class TaxiScene(Scene):
         self.path_length = 0
         self.path_cost = 0
         self.solution_time = 0
+        self.max_frontier_size = 0
         
         # Scrolling for statistics panel
         self.scroll_offset = 0
@@ -580,11 +578,12 @@ class TaxiScene(Scene):
         self.solution_time = end_time - start_time
         self.nodes_expanded = self.selected_algorithm.nodes_expanded
         self.path_cost = self.selected_algorithm.path_cost
+        self.max_frontier_size = self.selected_algorithm.max_frontier_size
         
         if self.solution_path:
             self.path_length = len(self.solution_path)
             print(f"Solution found! Path length: {self.path_length}, Path cost: {self.path_cost}")
-            print(f"Time: {self.solution_time:.3f}s, Nodes expanded: {self.nodes_expanded}")
+            print(f"Time: {self.solution_time:.3f}s, Nodes expanded: {self.nodes_expanded}, Max frontier size: {self.max_frontier_size}")
             self.is_running = True
             self.current_step = 0
             # Set environment state with new format: [taxi_row, taxi_col, passenger_states..., current_passenger]
@@ -593,7 +592,7 @@ class TaxiScene(Scene):
             self.env.current_passenger = self.start_state[-1]
             self.env.last_action = 0
         else:
-            print("No solution found!")
+            print(f"No solution found! Max frontier size: {self.max_frontier_size}")
     
     def toggle_pause(self):
         """Toggle pause state"""
@@ -611,6 +610,7 @@ class TaxiScene(Scene):
         self.path_length = 0
         self.path_cost = 0
         self.solution_time = 0
+        self.max_frontier_size = 0
         self.is_paused = False
         self.btn_pause.text = "Pause"
         self.scroll_offset = 0
@@ -938,6 +938,7 @@ class TaxiScene(Scene):
         stats_lines = [
             f"Algorithm: {self.algorithm_name}",
             f"Nodes Expanded: {self.nodes_expanded}",
+            f"Max Frontier Size: {self.max_frontier_size}",
             f"Path Length: {self.path_length}",
             f"Path Cost: {self.path_cost}",
             f"Time: {self.solution_time:.3f}s",
